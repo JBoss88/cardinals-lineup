@@ -1,42 +1,44 @@
-# Cardinals Lineup Bot
+# ⚾ Automated Cardinals Lineup Bot
 
-A GitHub Actions bot that emails the St. Louis Cardinals starting lineup each game day as soon as it's posted on MLB.
+A serverless Python automation pipeline that fetches the St. Louis Cardinals daily starting lineup via the MLB Stats API and delivers it directly via email.
 
-## How it works
+Built as an end-to-end demonstration of API integration, cloud-based CI/CD scheduling, and state management within stateless environments.
 
-1. Runs daily at noon CDT (April–October) via GitHub Actions
-2. Checks the MLB Stats API for a Cardinals game that day
-3. Polls every 15 minutes (up to 5 hours) until the lineup is officially posted
-4. Sends an email with the batting order to all configured recipients
+## 🏗️ Architecture & Tech Stack
 
-## Setup
+- **Language:** Python 3.13
+- **Data Source:** MLB Stats API (RESTful JSON)
+- **Delivery:** Python `smtplib` & `email.message` (Gmail SMTP)
+- **CI/CD & Automation:** GitHub Actions (Ubuntu-latest runners)
 
-### 1. Add the Gmail secret
+## 🧠 Engineering Decisions & Edge Case Handling
 
-In your GitHub repo, go to **Settings → Secrets and variables → Actions** and add:
+When migrating this script from a local environment to a cloud-based automated runner, several architectural decisions were made to ensure stability and efficiency:
 
-| Secret name | Value |
-|---|---|
-| `EMAIL_APP_PASSWORD` | A [Gmail App Password](https://support.google.com/accounts/answer/185833) for the sender account |
+### 1. Bypassing Cloud Timeout Limits (The Hourly Runner)
 
-> Regular Gmail passwords won't work — you need a 16-character App Password with 2FA enabled on the account.
+Baseball game times vary wildly, and starting lineups are typically posted 2 to 3 hours before first pitch. GitHub Actions has a hard execution limit of 6 hours per job. A standard "sleep and wait" script triggered at noon would timeout and fail before a 9:00 PM West Coast game lineup was posted.
 
-### 2. Configure recipients
+- **Solution:** The workflow runs on an **hourly CRON schedule** (`0 * * 4-10 *`). The script acts as a fast "sprint"—it wakes up, checks the API, and immediately shuts down. If the lineup isn't there, it simply exits and tries again the next hour.
 
-Edit `cards_lineup.py` and update the `RECEIVER_EMAIL` list:
+### 2. State Tracking in a Stateless Cloud
 
-```python
-SENDER_EMAIL = "you@gmail.com"
-RECEIVER_EMAIL = ["you@gmail.com", "someone@example.com"]
-```
+Because the script runs every single hour, it needs a way to "remember" if it has already sent an email that day to prevent spamming the user.
 
-### 3. Enable the workflow
+- **Solution:** A lightweight state management system using a local text file (`last_sent.txt`). Once a successful email is dispatched, the script writes the current date to this file. The GitHub Action is granted write permissions to commit this file back to the repository. Upon the next hourly run, the script reads this file; if the dates match, it gracefully terminates early.
 
-Push to `main`. The workflow will trigger automatically every day at noon CDT from April through October. You can also run it manually from the **Actions** tab using the "Run workflow" button.
+### 3. Compute Efficiency (Seasonality)
 
-## Local usage
+Running an hourly cloud job 365 days a year is a waste of compute resources for a seasonal sport.
 
-```bash
-pip install -r requirements.txt
-EMAIL_APP_PASSWORD=your_app_password python cards_lineup.py
-```
+- **Solution:** The GitHub Actions workflow is strictly configured to only run during the MLB regular season and postseason (Months 4 through 10).
+
+## 🚀 Setup & Installation (Local Testing)
+
+If you wish to clone this repository and run it locally, follow these steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/yourusername/cardinals-lineup.git](https://github.com/yourusername/cardinals-lineup.git)
+   cd cardinals-lineup
+   ```
