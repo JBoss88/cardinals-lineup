@@ -1,0 +1,42 @@
+name: Hourly Cardinals Lineup Bot
+
+on:
+  schedule:
+    # Runs at minute 0 past every hour, April through October
+    - cron: "0 * * 4-10 *"
+  workflow_dispatch:
+
+# Give the bot permission to save files back to your repo
+permissions:
+  contents: write
+
+jobs:
+  send-lineup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10 # We can lower this since it runs instantly now!
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run lineup bot
+        env:
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+        run: python cards_lineup.py
+
+      # This step saves the last_sent.txt file so the bot remembers tomorrow
+      - name: Commit and push tracking file
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add last_sent.txt
+          git commit -m "Auto-update last sent date" || echo "No changes to commit"
+          git push
