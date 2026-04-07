@@ -29,7 +29,7 @@ jobs:
 
       - name: Run lineup bot
         env:
-          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_APP_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
         run: python cards_lineup.py
 
       # This step saves the last_sent.txt file so the bot remembers tomorrow
@@ -37,6 +37,6 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
-          git add last_sent.txt
+          git add last_sent.txt || echo "File not generated yet"
           git commit -m "Auto-update last sent date" || echo "No changes to commit"
-          git push
+          git push || echo "Nothing to push"

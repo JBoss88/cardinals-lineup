@@ -9,7 +9,7 @@ import os
 # --- CONFIGURATION ---
 TEAM_ID = 138  # St. Louis Cardinals
 SENDER_EMAIL = "jacksonboss88@gmail.com"
-SENDER_PASSWORD = os.getenv("EMAIL_APP_PASSWORD") # Your App Password
+SENDER_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
 RECEIVER_EMAIL = ["jacksonboss88@gmail.com", 'jason.boss@fedex.com']
 
 def get_todays_game():
